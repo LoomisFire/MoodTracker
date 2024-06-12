@@ -3,11 +3,12 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 
 import javafx.application.Application;
-import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableMap;
 import javafx.geometry.Insets;
@@ -15,8 +16,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
@@ -30,33 +30,41 @@ public class MoodTracker extends Application {
 
     private Label moodLabel;
     private ObservableMap<String, MoodEntry> moodEntries = FXCollections.observableHashMap();
-    private TableView<MoodEntry> tableView;
     private final String FILE_NAME = "mood_entries.csv";
+    private int width = 300;
+    private int height = 400;
+    private final static String happyText = "Happy";
+    private final static String sadText = "Sad";
+    private final static String angryText = "Angry";
+    private final static String anxiousText = "Anxious";
+    private final static String calmText = "Calm";
+    private final static String happyColor = "#4CAF50";
+    private final static String sadColor = "#2196F3";
+    private final static String angryColor = "#f44336";
+    private final static String anxiousColor = "#FFC107";
+    private final static String calmColor = "#8BC34A";
 
     @Override
     public void start(Stage primaryStage) {
-        loadMoodEntries(); // Load mood entries from file
+        loadMoodEntries();
 
-        // Initialize the mood label
         moodLabel = new Label("Select your mood:");
         moodLabel.setAlignment(Pos.CENTER);
 
-        // Create buttons for different moods
-        Button happyButton = createMoodButton("Happy", "#4CAF50");
-        Button sadButton = createMoodButton("Sad", "#2196F3");
-        Button angryButton = createMoodButton("Angry", "#f44336");
-        Button anxiousButton = createMoodButton("Anxious", "#FFC107");
-        Button calmButton = createMoodButton("Calm", "#8BC34A");
-        
+        Button happyButton = createMoodButton(happyText, happyColor);
+        Button sadButton = createMoodButton(sadText, sadColor);
+        Button angryButton = createMoodButton(angryText, angryColor);
+        Button anxiousButton = createMoodButton(anxiousText, anxiousColor);
+        Button calmButton = createMoodButton(calmText, calmColor);
+
         Button historyButton = new Button("View History");
 
-        // Add margins to moodLabel and historyButton
         VBox.setMargin(moodLabel, new Insets(0, 0, 10, 0));
         VBox.setMargin(historyButton, new Insets(10, 0, 0, 0));
 
         // Layout for the main scene
         VBox root = new VBox(0); // Set spacing to #
-        root.setAlignment(Pos.CENTER); // Center align all elements
+        root.setAlignment(Pos.CENTER);
         root.getChildren().addAll(moodLabel, happyButton, sadButton, angryButton, anxiousButton, calmButton,
                 historyButton);
         root.setStyle("-fx-padding: 20;");
@@ -68,28 +76,8 @@ public class MoodTracker extends Application {
         VBox.setVgrow(anxiousButton, Priority.ALWAYS);
         VBox.setVgrow(calmButton, Priority.ALWAYS);
 
-        Scene mainScene = new Scene(root, 300, 400);
-
-        // Create the history scene
-        tableView = new TableView<>();
-        TableColumn<MoodEntry, String> moodColumn = new TableColumn<>("Mood");
-        moodColumn.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getMood()));
-        TableColumn<MoodEntry, String> dateColumn = new TableColumn<>("Date");
-        dateColumn.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getDate()));
-
-        // Add columns to the table using an explicit list
-        tableView.getColumns().add(moodColumn);
-        tableView.getColumns().add(dateColumn);
-
-        tableView.setItems(FXCollections.observableArrayList(moodEntries.values()));
-
-        Button backButton = new Button("Back to Main");
-        backButton.setOnAction(e -> primaryStage.setScene(mainScene));
-
-        VBox historyLayout = new VBox(10, tableView, backButton);
-        historyLayout.setAlignment(Pos.CENTER);
-        historyLayout.setStyle("-fx-padding: 20;");
-        Scene historyScene = new Scene(historyLayout, 300, 400);
+        Scene mainScene = new Scene(root, width, height);
+        Scene historyScene = createHistoryScene(mainScene, primaryStage);
 
         // Event handler for the history button
         historyButton.setOnAction(e -> primaryStage.setScene(historyScene));
@@ -102,8 +90,8 @@ public class MoodTracker extends Application {
     private Button createMoodButton(String mood, String color) {
         Button button = new Button(mood);
         button.setStyle("-fx-background-color: " + color + "; -fx-text-fill: white; -fx-font-size: 14px;");
-        button.setMaxWidth(Double.MAX_VALUE); // Make button expand to fill available width
-        button.setPrefHeight(50); // Set a preferred height for all buttons
+        button.setMaxWidth(Double.MAX_VALUE);
+        button.setPrefHeight(50);
 
         button.setOnAction(e -> {
             moodLabel.setText("Current Mood: " + mood);
@@ -117,11 +105,17 @@ public class MoodTracker extends Application {
         String date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
         MoodEntry newEntry = new MoodEntry(mood, date);
 
-        moodEntries.put(date, newEntry); // Store or replace the entry in the map
+        moodEntries.put(date, newEntry);
 
         saveMoodEntries(); // Save the updated entries to file
-        tableView.setItems(FXCollections.observableArrayList(moodEntries.values()));
-        tableView.refresh(); // Refresh the table view
+
+        // Update the history scene
+        Stage stage = (Stage) moodLabel.getScene().getWindow(); // Get the current stage
+        Scene currentScene = stage.getScene();
+        if (currentScene instanceof Scene) {
+            Scene historyScene = createHistoryScene(currentScene, stage);
+            stage.setScene(historyScene);
+        }
     }
 
     private void saveMoodEntries() {
@@ -148,6 +142,65 @@ public class MoodTracker extends Application {
         }
     }
 
+    private Scene createHistoryScene(Scene mainScene, Stage primaryStage) {
+        GridPane calendarPane = createCalendar(YearMonth.now());
+
+        Button backButton = new Button("Back to Main");
+        backButton.setOnAction(e -> primaryStage.setScene(mainScene));
+
+        VBox historyLayout = new VBox(10, calendarPane, backButton);
+        historyLayout.setAlignment(Pos.CENTER);
+        historyLayout.setStyle("-fx-padding: 20;");
+        Scene historyScene = new Scene(historyLayout, width, height);
+        return historyScene;
+    }
+
+    private GridPane createCalendar(YearMonth yearMonth) {
+        GridPane calendarPane = new GridPane();
+        calendarPane.setAlignment(Pos.CENTER);
+        calendarPane.setHgap(1);
+        calendarPane.setVgap(1);
+
+        String[] daysOfWeek = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
+        for (int i = 0; i < 7; i++) {
+            Label dayOfWeekLabel = new Label(daysOfWeek[i]);
+            dayOfWeekLabel.setStyle("-fx-font-weight: bold;");
+            dayOfWeekLabel.setPrefSize(40, 60);
+            dayOfWeekLabel.setAlignment(Pos.CENTER);
+            calendarPane.add(dayOfWeekLabel, i, 0);
+        }
+
+        // Get the first day of the month and the number of days in the month
+        LocalDate firstDayOfMonth = yearMonth.atDay(1);
+        int lengthOfMonth = yearMonth.lengthOfMonth();
+
+        // Populate the calendar with day labels and mood indicators
+        int row = 1;
+        int col = firstDayOfMonth.getDayOfWeek().getValue() % 7; // Adjust for Sunday being 7 instead of 0
+        for (int i = 1; i <= lengthOfMonth; i++) {
+
+            String dateKey = yearMonth.atDay(i).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+            Label moodIndicator = new Label(Integer.toString(i));
+            moodIndicator.setStyle("-fx-font-weight: bold;" + "-fx-border-color: black;");
+            moodIndicator.setPrefSize(40, 40);
+            moodIndicator.setAlignment(Pos.CENTER);
+            if (moodEntries.containsKey(dateKey)) {
+                MoodEntry moodEntry = moodEntries.get(dateKey);
+                moodIndicator.setStyle("-fx-font-weight: bold;" + "-fx-background-color: " + moodEntry.getColor()
+                        + "; -fx-border-color: black;");
+            }
+            calendarPane.add(moodIndicator, col, row + 1);
+
+            col++;
+            if (col == 7) {
+                col = 0;
+                row += 2; // Move to the next row (skipping the row for mood indicators)
+            }
+        }
+
+        return calendarPane;
+    }
+
     // MoodEntry class to store mood data
     public static class MoodEntry {
         private String mood;
@@ -162,12 +215,30 @@ public class MoodTracker extends Application {
             return mood;
         }
 
-        public void setMood(String mood) { // Setter for mood
+        public void setMood(String mood) {
             this.mood = mood;
         }
 
         public String getDate() {
             return date;
+        }
+
+        // Method to get the color associated with the mood
+        public String getColor() {
+            switch (mood) {
+                case happyText:
+                    return happyColor;
+                case sadText:
+                    return sadColor;
+                case angryText:
+                    return angryColor;
+                case anxiousText:
+                    return anxiousColor;
+                case calmText:
+                    return calmColor;
+                default:
+                    return "transparent"; // Default color if mood is not recognized
+            }
         }
     }
 }
