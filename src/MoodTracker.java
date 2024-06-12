@@ -21,7 +21,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-public class App extends Application {
+public class MoodTracker extends Application {
 
     public static void main(String[] args) throws Exception {
         System.out.println("MoodTracker Launched.");

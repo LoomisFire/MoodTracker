@@ -6,24 +6,17 @@
     "configurations": [
         {
             "type": "java",
-            "name": "MoodTracker",
-            "request": "launch",
-            "mainClass": "MoodTracker",
-            "projectName": "MoodTracker_f95e230"
-        },
-        {
-            "type": "java",
             "name": "Current File",
             "request": "launch",
             "mainClass": "${file}"
         },
         {
             "type": "java",
-            "name": "App",
+            "name": "MoodTracker",
             "request": "launch",
             "vmArgs": "--module-path C:/Users/85loo/Downloads/CodeProjects/MoodTracker/javafx-sdk-22.0.1/lib --add-modules javafx.controls",
-            "mainClass": "App",
-            "projectName": "MoodTracker_f95e230"
+            "mainClass": "MoodTracker",
+            "projectName": "MoodTracker_e12a445c"
         }
     ]
 }
