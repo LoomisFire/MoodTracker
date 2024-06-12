@@ -1,4 +1,5 @@
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -37,7 +38,7 @@ public class MoodTracker extends Application {
     private ObservableMap<String, MoodEntry> moodEntries = FXCollections.observableHashMap();
 
     /* File location for saving mood entries */
-    private final String FILE_NAME = "mood_entries.csv";
+    private final String ENTRIES_FILE_NAME = "mood_entries.csv";
 
     /* Application Dimensions */
     private int width = 300;
@@ -158,7 +159,7 @@ public class MoodTracker extends Application {
      * Saves mood entries to the CSV file.
      */
     private void saveMoodEntries() {
-        try (PrintWriter writer = new PrintWriter(new FileWriter(FILE_NAME))) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(ENTRIES_FILE_NAME))) {
             for (MoodEntry entry : moodEntries.values()) {
                 writer.println(entry.getMood() + "," + entry.getDate());
             }
@@ -168,10 +169,17 @@ public class MoodTracker extends Application {
     }
 
     /**
-     * Loads mood entries from the CSV file.
+     * Loads mood entries from the CSV file or create file if it does not exist.
      */
     private void loadMoodEntries() {
-        try (BufferedReader reader = new BufferedReader(new FileReader(FILE_NAME))) {
+        File file = new File(ENTRIES_FILE_NAME);
+        if (!file.exists()) {
+            try (PrintWriter writer = new PrintWriter(new FileWriter(ENTRIES_FILE_NAME))) {
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        try (BufferedReader reader = new BufferedReader(new FileReader(ENTRIES_FILE_NAME))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split(",");
