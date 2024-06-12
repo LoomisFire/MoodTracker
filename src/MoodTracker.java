@@ -161,13 +161,41 @@ public class MoodTracker extends Application {
         calendarPane.setHgap(1);
         calendarPane.setVgap(1);
 
+        // Add label for month and year
+        Label monthYearLabel = new Label(yearMonth.getMonth().toString() + " " + yearMonth.getYear());
+        monthYearLabel.setStyle("-fx-font-weight: bold;");
+        monthYearLabel.setPrefWidth(280); // Set width to match calendar width
+        monthYearLabel.setAlignment(Pos.CENTER);
+        calendarPane.add(monthYearLabel, 0, 0, 7, 1); // Span across all columns
+
+        // Add left arrow button
+        Button leftArrowButton = new Button("<");
+        leftArrowButton.setPrefSize(40, 40);
+        leftArrowButton.setOnAction(e -> {
+            YearMonth previousMonth = yearMonth.minusMonths(1);
+            calendarPane.getChildren().clear();
+            calendarPane.add(createCalendar(previousMonth), 0, 0, 7, 1);
+        });
+        calendarPane.add(leftArrowButton, 0, 1);
+
+        // Add right arrow button
+        Button rightArrowButton = new Button(">");
+        rightArrowButton.setPrefSize(40, 40);
+        rightArrowButton.setOnAction(e -> {
+            YearMonth nextMonth = yearMonth.plusMonths(1);
+            calendarPane.getChildren().clear();
+            calendarPane.add(createCalendar(nextMonth), 0, 0, 7, 1);
+        });
+        calendarPane.add(rightArrowButton, 6, 1);
+
+        // Add days of the week
         String[] daysOfWeek = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
         for (int i = 0; i < 7; i++) {
             Label dayOfWeekLabel = new Label(daysOfWeek[i]);
             dayOfWeekLabel.setStyle("-fx-font-weight: bold;");
-            dayOfWeekLabel.setPrefSize(40, 60);
+            dayOfWeekLabel.setPrefSize(40, 40);
             dayOfWeekLabel.setAlignment(Pos.CENTER);
-            calendarPane.add(dayOfWeekLabel, i, 0);
+            calendarPane.add(dayOfWeekLabel, i, 2);
         }
 
         // Get the first day of the month and the number of days in the month
@@ -189,7 +217,7 @@ public class MoodTracker extends Application {
                 moodIndicator.setStyle("-fx-font-weight: bold;" + "-fx-background-color: " + moodEntry.getColor()
                         + "; -fx-border-color: black;");
             }
-            calendarPane.add(moodIndicator, col, row + 1);
+            calendarPane.add(moodIndicator, col, row + 2);
 
             col++;
             if (col == 7) {
@@ -223,7 +251,6 @@ public class MoodTracker extends Application {
             return date;
         }
 
-        // Method to get the color associated with the mood
         public String getColor() {
             switch (mood) {
                 case happyText:
