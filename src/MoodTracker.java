@@ -12,11 +12,13 @@ import java.time.format.DateTimeFormatter;
 import javafx.application.Application;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableMap;
+import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -24,8 +26,8 @@ import javafx.stage.Stage;
 
 /**
  * MoodTracker Application that lets you pick from 5 options -
- * Happy, Sad, Angry, Anxious, Calm - and keeps track over time
- * your choices.
+ * Happy, Sad, Angry, Anxious, Calm - and keeps track of your
+ * choices over time.
  * 
  * @author LoomisFire
  */
@@ -41,8 +43,8 @@ public class MoodTracker extends Application {
     private final String ENTRIES_FILE_NAME = "mood_entries.csv";
 
     /* Application Dimensions */
-    private int width = 300;
-    private int height = 400;
+    private int width = 360;
+    private int height = 480;
 
     /* Individual text for each button */
     private static final String HAPPY_TEXT = "Happy";
@@ -57,6 +59,12 @@ public class MoodTracker extends Application {
     private static final String ANGRY_COLOR = "#f44336";
     private static final String ANXIOUS_COLOR = "#FFC107";
     private static final String CALM_COLOR = "#8BC34A";
+
+    /*
+     * Flag to track if the comment dialog is currently open to prevent multiple
+     * dialog boxes
+     */
+    private boolean isCommentDialogOpen = false;
 
     /**
      * Main method to launch the JavaFX application.
@@ -84,15 +92,15 @@ public class MoodTracker extends Application {
 
         Button historyButton = new Button("View History");
 
-        VBox.setMargin(moodLabel, new Insets(0, 0, 10, 0));
-        VBox.setMargin(historyButton, new Insets(10, 0, 0, 0));
+        VBox.setMargin(moodLabel, new Insets(0, 0, 20, 0));
+        VBox.setMargin(historyButton, new Insets(20, 0, 0, 0));
 
         // Layout for the main scene
-        VBox root = new VBox(0); // Set spacing to #
+        VBox root = new VBox(0);
         root.setAlignment(Pos.CENTER);
         root.getChildren().addAll(moodLabel, happyButton, sadButton, angryButton, anxiousButton, calmButton,
                 historyButton);
-        root.setStyle("-fx-padding: 20;");
+        root.setStyle("-fx-padding: 10 20;");
 
         // Set VBox to grow the buttons to fill available space
         VBox.setVgrow(happyButton, Priority.ALWAYS);
@@ -104,7 +112,6 @@ public class MoodTracker extends Application {
         Scene mainScene = new Scene(root, width, height);
         Scene historyScene = createHistoryScene(primaryStage, mainScene);
 
-        // Event handler for the history button
         historyButton.setOnAction(e -> primaryStage.setScene(historyScene));
 
         primaryStage.setTitle("Mood Tracker");
@@ -140,9 +147,14 @@ public class MoodTracker extends Application {
      */
     private void storeMoodEntry(String mood) {
         String date = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-        MoodEntry newEntry = new MoodEntry(mood, date);
 
-        moodEntries.put(date, newEntry);
+        if (moodEntries.containsKey(date)) {
+            MoodEntry moodEntry = moodEntries.get(date);
+            moodEntry.setMood(mood);
+        } else {
+            MoodEntry newEntry = new MoodEntry(mood, date);
+            moodEntries.put(date, newEntry);
+        }
 
         saveMoodEntries(); // Save the updated entries to file
 
@@ -161,7 +173,7 @@ public class MoodTracker extends Application {
     private void saveMoodEntries() {
         try (PrintWriter writer = new PrintWriter(new FileWriter(ENTRIES_FILE_NAME))) {
             for (MoodEntry entry : moodEntries.values()) {
-                writer.println(entry.getMood() + "," + entry.getDate());
+                writer.println(entry.getMood() + "," + entry.getDate() + "," + entry.getComment());
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -185,6 +197,8 @@ public class MoodTracker extends Application {
                 String[] parts = line.split(",");
                 if (parts.length == 2) {
                     moodEntries.put(parts[1], new MoodEntry(parts[0], parts[1])); // Use date as the key
+                } else if (parts.length == 3) {
+                    moodEntries.put(parts[1], new MoodEntry(parts[0], parts[1], parts[2])); // Use date as the key
                 }
             }
         } catch (IOException e) {
@@ -200,16 +214,54 @@ public class MoodTracker extends Application {
      * @return the created history scene
      */
     private Scene createHistoryScene(Stage primaryStage, Scene mainScene) {
-        GridPane calendarPane = createCalendar(YearMonth.now());
+        GridPane calendarPane = createCalendar(primaryStage, YearMonth.now());
 
         Button backButton = new Button("Back to Main");
+        backButton.setPrefHeight(20);
         backButton.setOnAction(e -> primaryStage.setScene(mainScene));
 
         VBox historyLayout = new VBox(10, calendarPane, backButton);
         historyLayout.setAlignment(Pos.CENTER);
-        historyLayout.setStyle("-fx-padding: 20;");
+        historyLayout.setStyle("-fx-padding: 10 20;");
         Scene historyScene = new Scene(historyLayout, width, height);
         return historyScene;
+    }
+
+    /**
+     * Opens a dialog to enter a comment for the specified date.
+     *
+     * @param dateKey the date key
+     */
+    private void showCommentDialog(Stage primaryStage, MoodEntry moodEntry) {
+        if (isCommentDialogOpen) {
+            return;
+        }
+
+        isCommentDialogOpen = true;
+        Stage commentStage = new Stage();
+        commentStage.initOwner(primaryStage);
+        commentStage.setTitle("Add Comment");
+
+        Label dateLabel = new Label("Date: " + moodEntry.getDate());
+        TextArea commentTextArea = new TextArea(moodEntry.getComment());
+        commentTextArea.setWrapText(true);
+        commentTextArea.setPromptText("Enter your comment here...");
+
+        Button saveButton = new Button("Save");
+        saveButton.setOnAction(event -> {
+            moodEntry.setComment(commentTextArea.getText());
+            saveMoodEntries(); // Save mood entries after adding the comment
+            commentStage.close();
+        });
+
+        VBox vbox = new VBox(10, dateLabel, commentTextArea, saveButton);
+        vbox.setAlignment(Pos.CENTER);
+        vbox.setPadding(new Insets(10));
+
+        Scene scene = new Scene(vbox, 300, 200);
+        commentStage.setScene(scene);
+        commentStage.setOnHidden(event -> isCommentDialogOpen = false);
+        commentStage.showAndWait();
     }
 
     /**
@@ -218,7 +270,7 @@ public class MoodTracker extends Application {
      * @param yearMonth the year and month to display
      * @return the created GridPane representing the calendar
      */
-    private GridPane createCalendar(YearMonth yearMonth) {
+    private GridPane createCalendar(Stage primaryStage, YearMonth yearMonth) {
         GridPane calendarPane = new GridPane();
         calendarPane.setAlignment(Pos.CENTER);
         calendarPane.setHgap(1);
@@ -226,20 +278,23 @@ public class MoodTracker extends Application {
 
         // Add label for month and year
         Label monthYearLabel = new Label(yearMonth.getMonth().toString() + " " + yearMonth.getYear());
-        monthYearLabel.setStyle("-fx-font-weight: bold;");
-        // monthYearLabel.setPrefWidth(280); // Set width to match calendar width
-        monthYearLabel.setPrefSize(280, 40); // Set width to match calendar width
+        monthYearLabel.setPrefHeight(40);
         monthYearLabel.setAlignment(Pos.CENTER);
-        calendarPane.add(monthYearLabel, 0, 0, 7, 1); // Span across all columns
+        monthYearLabel.setPadding(new Insets(0, 0, 0, 0));
+        monthYearLabel.setStyle("-fx-font-weight: bold;");
+        calendarPane.add(monthYearLabel, 0, 0, 7, 1);
+        GridPane.setHalignment(monthYearLabel, HPos.CENTER);
+
 
         // Add left arrow button
         Button leftArrowButton = new Button("<");
         leftArrowButton.setPrefSize(40, 40);
         leftArrowButton.setAlignment(Pos.CENTER);
+        leftArrowButton.setStyle("-fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-border-color: black;");
         leftArrowButton.setOnAction(e -> {
             YearMonth previousMonth = yearMonth.minusMonths(1);
             calendarPane.getChildren().clear();
-            calendarPane.add(createCalendar(previousMonth), 0, 0, 7, 1);
+            calendarPane.add(createCalendar(primaryStage, previousMonth), 0, 0, 7, 1);
         });
         calendarPane.add(leftArrowButton, 0, 1);
 
@@ -247,10 +302,11 @@ public class MoodTracker extends Application {
         Button rightArrowButton = new Button(">");
         rightArrowButton.setAlignment(Pos.CENTER);
         rightArrowButton.setPrefSize(40, 40);
+        rightArrowButton.setStyle("-fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-border-color: black;");
         rightArrowButton.setOnAction(e -> {
             YearMonth nextMonth = yearMonth.plusMonths(1);
             calendarPane.getChildren().clear();
-            calendarPane.add(createCalendar(nextMonth), 0, 0, 7, 1);
+            calendarPane.add(createCalendar(primaryStage, nextMonth), 0, 0, 7, 1);
         });
         calendarPane.add(rightArrowButton, 6, 1);
 
@@ -283,6 +339,7 @@ public class MoodTracker extends Application {
                 MoodEntry moodEntry = moodEntries.get(dateKey);
                 moodIndicator.setStyle("-fx-font-weight: bold;" + "-fx-background-color: " + moodEntry.getColor()
                         + "; -fx-border-color: black;");
+                moodIndicator.setOnMouseClicked(event -> showCommentDialog(primaryStage, moodEntry));
             }
             calendarPane.add(moodIndicator, col, row + 2);
 
@@ -302,6 +359,7 @@ public class MoodTracker extends Application {
     public static class MoodEntry {
         private String mood;
         private final String date;
+        private String comment;
 
         /**
          * Constructs a MoodEntry with the specified mood and date.
@@ -312,6 +370,20 @@ public class MoodTracker extends Application {
         public MoodEntry(String mood, String date) {
             this.mood = mood;
             this.date = date;
+            this.comment = "";
+        }
+
+        /**
+         * Constructs a MoodEntry with the specified mood and date.
+         * 
+         * @param mood    the mood
+         * @param date    the date
+         * @param comment the comment
+         */
+        public MoodEntry(String mood, String date, String comment) {
+            this.mood = mood;
+            this.date = date;
+            this.comment = comment;
         }
 
         /**
@@ -339,6 +411,24 @@ public class MoodTracker extends Application {
          */
         public String getDate() {
             return date;
+        }
+
+        /**
+         * Gets the comment.
+         *
+         * @return the comment
+         */
+        public String getComment() {
+            return comment;
+        }
+
+        /**
+         * Sets the comment.
+         *
+         * @param comment the comment to set
+         */
+        public void setComment(String comment) {
+            this.comment = comment;
         }
 
         /**
