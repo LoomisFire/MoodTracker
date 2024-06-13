@@ -203,9 +203,9 @@ public class MoodTracker extends Application {
                 String[] parts = line.split(",");
 
                 if (parts.length == 2) {
-                    moodEntries.put(parts[1], new MoodEntry(parts[0], parts[1])); // Use date as the key
+                    moodEntries.put(parts[1], new MoodEntry(parts[0], parts[1]));
                 } else if (parts.length == 3) {
-                    moodEntries.put(parts[1], new MoodEntry(parts[0], parts[1], parts[2])); // Use date as the key
+                    moodEntries.put(parts[1], new MoodEntry(parts[0], parts[1], parts[2]));
                 }
             }
         } catch (IOException e) {
@@ -278,7 +278,7 @@ public class MoodTracker extends Application {
         vbox.setAlignment(Pos.CENTER);
         vbox.setPadding(new Insets(10));
 
-        Scene scene = new Scene(vbox, 300, 200);
+        Scene scene = new Scene(vbox, 320, 200);
         commentStage.setScene(scene);
         commentStage.setOnHidden(event -> isCommentDialogOpen = false);
         commentStage.showAndWait();
@@ -346,10 +346,9 @@ public class MoodTracker extends Application {
         LocalDate firstDayOfMonth = yearMonth.atDay(1);
         int lengthOfMonth = yearMonth.lengthOfMonth();
 
-        // Populate the calendar with day labels and mood indicators
+        // Populate the calendar
         int row = 3;
-        int col = firstDayOfMonth.getDayOfWeek().getValue() % 7; // Adjust for Sunday being 7 (Java's DayOfWeek enum
-                                                                 // starts with Monday as 1)
+        int col = firstDayOfMonth.getDayOfWeek().getValue() % 7;
         for (int i = 1; i <= lengthOfMonth; i++) {
 
             String dateKey = yearMonth.atDay(i).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
@@ -363,7 +362,7 @@ public class MoodTracker extends Application {
                 moodIndicator.setStyle("-fx-font-weight: bold;" + "-fx-background-color: " + moodEntry.getColor()
                         + "; -fx-border-color: black;");
             }
-            
+
             moodIndicator.setOnMouseClicked(event -> {
                 MoodEntry moodEntry = moodEntries.computeIfAbsent(dateKey, key -> new MoodEntry("Unknown", key));
                 showCommentDialog(primaryStage, moodEntry);
