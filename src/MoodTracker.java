@@ -17,6 +17,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.GridPane;
@@ -248,21 +249,32 @@ public class MoodTracker extends Application {
         isCommentDialogOpen = true;
         Stage commentStage = new Stage();
         commentStage.initOwner(primaryStage);
-        commentStage.setTitle("Add Comment");
+        commentStage.setTitle("Modify Comment or Mood");
 
         Label dateLabel = new Label("Date: " + moodEntry.getDate());
         TextArea commentTextArea = new TextArea(moodEntry.getComment());
         commentTextArea.setWrapText(true);
         commentTextArea.setPromptText("Enter your comment here...");
 
+        // Create a ComboBox to allow changing the mood
+        ComboBox<String> moodComboBox = new ComboBox<>();
+        moodComboBox.getItems().addAll(HAPPY_TEXT, SAD_TEXT, ANGRY_TEXT, ANXIOUS_TEXT, CALM_TEXT);
+        moodComboBox.setValue(moodEntry.getMood());
+        moodComboBox.setPromptText("Select Mood");
+
         Button saveButton = new Button("Save");
         saveButton.setOnAction(event -> {
             moodEntry.setComment(commentTextArea.getText());
-            saveMoodEntries(); // Save mood entries after adding the comment
+            moodEntry.setMood(moodComboBox.getValue());
+            saveMoodEntries();
             commentStage.close();
+            // Update calendar display
+            GridPane calendarPane = createCalendar(primaryStage, YearMonth.now());
+            VBox historyLayout = (VBox) primaryStage.getScene().getRoot();
+            historyLayout.getChildren().set(0, calendarPane); // Replace calendar in the VBox
         });
 
-        VBox vbox = new VBox(10, dateLabel, commentTextArea, saveButton);
+        VBox vbox = new VBox(10, dateLabel, moodComboBox, commentTextArea, saveButton);
         vbox.setAlignment(Pos.CENTER);
         vbox.setPadding(new Insets(10));
 
@@ -350,13 +362,17 @@ public class MoodTracker extends Application {
                 MoodEntry moodEntry = moodEntries.get(dateKey);
                 moodIndicator.setStyle("-fx-font-weight: bold;" + "-fx-background-color: " + moodEntry.getColor()
                         + "; -fx-border-color: black;");
-                moodIndicator.setOnMouseClicked(event -> showCommentDialog(primaryStage, moodEntry));
             }
+            
+            moodIndicator.setOnMouseClicked(event -> {
+                MoodEntry moodEntry = moodEntries.computeIfAbsent(dateKey, key -> new MoodEntry("Unknown", key));
+                showCommentDialog(primaryStage, moodEntry);
+            });
 
             calendarPane.add(moodIndicator, col, row);
 
             col++;
-            
+
             if (col == 7 && i != lengthOfMonth) {
                 col = 0;
                 row += 1;
