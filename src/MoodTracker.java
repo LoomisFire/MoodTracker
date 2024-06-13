@@ -75,6 +75,7 @@ public class MoodTracker extends Application {
     public static void main(String[] args) throws Exception {
         System.out.println("MoodTracker Launched.");
         launch(args);
+        System.out.println("MoodTracker Closed.");
     }
 
     @Override
@@ -161,6 +162,7 @@ public class MoodTracker extends Application {
         // Update an switch to the history scene
         Stage stage = (Stage) moodLabel.getScene().getWindow();
         Scene currentScene = stage.getScene();
+
         if (currentScene != null) {
             Scene historyScene = createHistoryScene(stage, currentScene);
             stage.setScene(historyScene);
@@ -185,16 +187,20 @@ public class MoodTracker extends Application {
      */
     private void loadMoodEntries() {
         File file = new File(ENTRIES_FILE_NAME);
+
         if (!file.exists()) {
             try (PrintWriter writer = new PrintWriter(new FileWriter(ENTRIES_FILE_NAME))) {
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
+
         try (BufferedReader reader = new BufferedReader(new FileReader(ENTRIES_FILE_NAME))) {
             String line;
+
             while ((line = reader.readLine()) != null) {
                 String[] parts = line.split(",");
+
                 if (parts.length == 2) {
                     moodEntries.put(parts[1], new MoodEntry(parts[0], parts[1])); // Use date as the key
                 } else if (parts.length == 3) {
@@ -218,12 +224,14 @@ public class MoodTracker extends Application {
 
         Button backButton = new Button("Back to Main");
         backButton.setPrefHeight(20);
+        backButton.setAlignment(Pos.BOTTOM_CENTER);
         backButton.setOnAction(e -> primaryStage.setScene(mainScene));
 
         VBox historyLayout = new VBox(10, calendarPane, backButton);
         historyLayout.setAlignment(Pos.CENTER);
         historyLayout.setStyle("-fx-padding: 10 20;");
         Scene historyScene = new Scene(historyLayout, width, height);
+
         return historyScene;
     }
 
@@ -271,6 +279,7 @@ public class MoodTracker extends Application {
      * @return the created GridPane representing the calendar
      */
     private GridPane createCalendar(Stage primaryStage, YearMonth yearMonth) {
+        int maxRows = 9;
         GridPane calendarPane = new GridPane();
         calendarPane.setAlignment(Pos.CENTER);
         calendarPane.setHgap(1);
@@ -285,12 +294,12 @@ public class MoodTracker extends Application {
         calendarPane.add(monthYearLabel, 0, 0, 7, 1);
         GridPane.setHalignment(monthYearLabel, HPos.CENTER);
 
-
         // Add left arrow button
         Button leftArrowButton = new Button("<");
         leftArrowButton.setPrefSize(40, 40);
         leftArrowButton.setAlignment(Pos.CENTER);
-        leftArrowButton.setStyle("-fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-border-color: black;");
+        leftArrowButton
+                .setStyle("-fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-border-color: black;");
         leftArrowButton.setOnAction(e -> {
             YearMonth previousMonth = yearMonth.minusMonths(1);
             calendarPane.getChildren().clear();
@@ -302,7 +311,8 @@ public class MoodTracker extends Application {
         Button rightArrowButton = new Button(">");
         rightArrowButton.setAlignment(Pos.CENTER);
         rightArrowButton.setPrefSize(40, 40);
-        rightArrowButton.setStyle("-fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-border-color: black;");
+        rightArrowButton
+                .setStyle("-fx-focus-color: transparent; -fx-faint-focus-color: transparent; -fx-border-color: black;");
         rightArrowButton.setOnAction(e -> {
             YearMonth nextMonth = yearMonth.plusMonths(1);
             calendarPane.getChildren().clear();
@@ -325,7 +335,7 @@ public class MoodTracker extends Application {
         int lengthOfMonth = yearMonth.lengthOfMonth();
 
         // Populate the calendar with day labels and mood indicators
-        int row = 1;
+        int row = 3;
         int col = firstDayOfMonth.getDayOfWeek().getValue() % 7; // Adjust for Sunday being 7 (Java's DayOfWeek enum
                                                                  // starts with Monday as 1)
         for (int i = 1; i <= lengthOfMonth; i++) {
@@ -335,19 +345,29 @@ public class MoodTracker extends Application {
             moodIndicator.setStyle("-fx-font-weight: bold;" + "-fx-border-color: black;");
             moodIndicator.setPrefSize(40, 40);
             moodIndicator.setAlignment(Pos.CENTER);
+
             if (moodEntries.containsKey(dateKey)) {
                 MoodEntry moodEntry = moodEntries.get(dateKey);
                 moodIndicator.setStyle("-fx-font-weight: bold;" + "-fx-background-color: " + moodEntry.getColor()
                         + "; -fx-border-color: black;");
                 moodIndicator.setOnMouseClicked(event -> showCommentDialog(primaryStage, moodEntry));
             }
-            calendarPane.add(moodIndicator, col, row + 2);
+
+            calendarPane.add(moodIndicator, col, row);
 
             col++;
-            if (col == 7) {
+            
+            if (col == 7 && i != lengthOfMonth) {
                 col = 0;
-                row += 2; // Move to the next row (skipping the row for mood indicators)
+                row += 1;
             }
+        }
+
+        while (calendarPane.getRowCount() < maxRows) {
+            row += 1;
+            Label dummyLabel = new Label();
+            dummyLabel.setPrefHeight(40);
+            calendarPane.add(dummyLabel, 0, row, 7, 1);
         }
 
         return calendarPane;
