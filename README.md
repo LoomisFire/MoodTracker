@@ -1,18 +1,13 @@
-## Getting Started
+## Project Overview
 
-Welcome to the VS Code Java world. Here is a guideline to help you get started to write Java code in Visual Studio Code.
+This project opens up calendar where the user can select how they were feeling on a specific day and add a comment to go with that feeling. This data would be saved in a csv and be loaded back when the application is restarted.
 
-## Folder Structure
+![Mood Select View](docs/MoodTracker1.png)
 
-The workspace contains two folders by default, where:
+![Calendar View](docs/MoodTracker2.png)
 
-- `src`: the folder to maintain sources
-- `lib`: the folder to maintain dependencies
+![Comment View](docs/MoodTracker3.png)
 
-Meanwhile, the compiled output files will be generated in the `bin` folder by default.
+## Dependencies
 
-> If you want to customize the folder structure, open `.vscode/settings.json` and update the related settings there.
-
-## Dependency Management
-
-The `JAVA PROJECTS` view allows you to manage your dependencies. More details can be found [here](https://github.com/microsoft/vscode-java-dependency#manage-dependencies).
+JavaFX runtime components are required to run this application
